@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>J.A.R.V.I.S. · AIR DRAW</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body>
+
+  <!-- HUD-углы JARVIS на углах экрана -->
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+
+  <div id="stage">
+    <div id="wrap">
+      <video id="cam" autoplay playsinline muted></video>
+      <canvas id="draw"></canvas>
+      <!-- Сканлайн-оверлей -->
+      <div id="scanlines"></div>
+    </div>
+
+    <div id="ui">
+      <div class="top">
+        <div class="badge badge-gesture">⟦ GESTURE ⟧ <strong id="gesture">—</strong></div>
+        <div class="badge badge-recog">⟦ RECOG ⟧ <strong id="recog">STAND BY</strong></div>
+        <div class="badge badge-fps">⟦ FPS ⟧ <strong id="fps">0</strong></div>
+      </div>
+
+      <div class="bottom">
+        <div style="display:flex; flex-direction:column; gap:10px; align-items:center;">
+          <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:center;">
+            <div class="palette" id="palette">
+              <button type="button" class="palette-trigger" id="paletteTrigger" aria-expanded="false">
+                <span class="current-dot" id="paletteCurrent" style="background:#6ee7ff; color:#6ee7ff;"></span>
+                <span>COLOR</span>
+                <span class="chev">▲</span>
+              </button>
+              <div class="palette-list" id="paletteList"></div>
+            </div>
+            <div class="slider-box" style="display:flex;align-items:center;" title="Ширина ластика">
+              <span class="slider-icon">🖐</span>
+              <input type="range" id="eraserSize" min="15" max="150" value="50" />
+              <span class="slider-val" id="eraserVal">50</span>
+            </div>
+            <button class="btn" id="clear">○ WIPE</button>
+            <button class="btn" id="save">● SAVE PNG</button>
+            <button id="camFlip" title="Переключить камеру">⟳</button>
+          </div>
+          <div class="gesture-hint">
+            ☝ DRAW &nbsp;·&nbsp; 🖐 ERASE &nbsp;·&nbsp; 🤝 GRAB &nbsp;·&nbsp; 🤝🤝 ZOOM
+            &nbsp;·&nbsp; 🗑 CRUMPLE &nbsp;·&nbsp; 🤘 ROCK — COLOR
+            &nbsp;·&nbsp; 🖐 HOLD 1S — WIPE
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JARVIS-таргет удержания ладони (мульти-кольцо) -->
+    <svg id="holdRing" width="160" height="160" viewBox="0 0 160 160" style="display:none;">
+      <defs>
+        <filter id="jvHoldGlow" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="2.4" result="b" />
+          <feMerge>
+            <feMergeNode in="b" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <!-- Внешнее пунктирное вращающееся кольцо -->
+      <circle cx="80" cy="80" r="74" fill="none" stroke="rgba(110,231,255,0.35)" stroke-width="0.8"
+        stroke-dasharray="4 6" filter="url(#jvHoldGlow)">
+        <animateTransform attributeName="transform" type="rotate" from="0 80 80" to="360 80 80" dur="14s"
+          repeatCount="indefinite" />
+      </circle>
+      <!-- Среднее техническое кольцо: дуги по 4 сектора -->
+      <g filter="url(#jvHoldGlow)">
+        <circle cx="80" cy="80" r="64" fill="none" stroke="rgba(110,231,255,0.25)" stroke-width="0.6" />
+        <path d="M 80 16 A 64 64 0 0 1 144 80" fill="none" stroke="#6ee7ff" stroke-width="1.2" stroke-linecap="round" />
+        <path d="M 80 144 A 64 64 0 0 1 16 80" fill="none" stroke="#6ee7ff" stroke-width="1.2" stroke-linecap="round" />
+      </g>
+      <!-- Прогресс-кольцо (заполнение) -->
+      <circle cx="80" cy="80" r="52" fill="rgba(2,6,13,0.45)" stroke="rgba(110,231,255,0.18)" stroke-width="1" />
+      <circle id="holdProgress" cx="80" cy="80" r="52" fill="none" stroke="#6ee7ff" stroke-width="3"
+        stroke-linecap="round" stroke-dasharray="327" stroke-dashoffset="327" transform="rotate(-90 80 80)"
+        style="filter: drop-shadow(0 0 8px #6ee7ff);" />
+      <!-- Внутренняя крестовина-таргет -->
+      <g stroke="#6ee7ff" stroke-width="1" opacity="0.85" filter="url(#jvHoldGlow)">
+        <line x1="80" y1="42" x2="80" y2="54" />
+        <line x1="80" y1="106" x2="80" y2="118" />
+        <line x1="42" y1="80" x2="54" y2="80" />
+        <line x1="106" y1="80" x2="118" y2="80" />
+        <circle cx="80" cy="80" r="3" fill="#6ee7ff" stroke="none" />
+      </g>
+      <!-- Числовая метка над таргетом -->
+      <text x="80" y="138" text-anchor="middle" fill="#6ee7ff" font-size="9" font-family="JetBrains Mono, monospace"
+        letter-spacing="2" style="text-shadow: 0 0 6px #6ee7ff;">HOLD · WIPE</text>
+    </svg>
+
+    <div class="loading" id="loading">
+      <div>
+        <div class="reticle"></div>
+        <div class="boot-title">J.A.R.V.I.S.</div>
+        <div class="boot-sub">NEURAL HAND-TRACK BOOT SEQUENCE</div>
+        <div style="margin-top:18px; color: var(--jv-cyan-l); font-size:11px;">
+          INITIALIZING<span class="boot-dots"></span>
+        </div>
+        <div style="margin-top:6px; font-size:10px; color: rgba(207,234,255,0.4); letter-spacing:1.5px;">
+          GRANT CAMERA ACCESS WHEN PROMPTED
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tesseract.js v5 (UMD-сборка, кладёт глобальный `Tesseract`). -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+  <!-- Основной модуль. Динамически грузит MediaPipe Tasks Vision (HandLandmarker). -->
+  <script type="module" src="js/main.js"></script>
+
+</body>
+
+</html>

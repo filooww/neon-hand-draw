@@ -1,0 +1,750 @@
+/* ============================================================
+   J.A.R.V.I.S. HUD theme
+   Палитра: глубокий навигационный синий + плазменный циан + золотая искра.
+   Все элементы — стеклянные плашки с угловыми скобками, тонкими линиями
+   и моноширинными подписями. Анимации — медленные, "технические".
+   ============================================================ */
+:root {
+  --jv-bg-0: #02060d;
+  --jv-bg-1: #04111c;
+  --jv-cyan: #6ee7ff;
+  --jv-cyan-d: #2bd4ff;
+  --jv-cyan-l: #cfeaff;
+  --jv-amber: #ffb84a;
+  --jv-line: rgba(110, 231, 255, 0.35);
+  --jv-line-soft: rgba(110, 231, 255, 0.15);
+  --jv-glow: 0 0 8px rgba(110, 231, 255, 0.55), 0 0 24px rgba(43, 212, 255, 0.18);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  background: var(--jv-bg-0);
+  overflow: hidden;
+  font-family: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace;
+  color: var(--jv-cyan-l);
+  letter-spacing: 0.4px;
+}
+
+/* Радиальный градиент-виньетка + гексогональная сетка фона */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse at center, rgba(43, 212, 255, 0.06) 0%, transparent 70%),
+    radial-gradient(ellipse at top, rgba(43, 212, 255, 0.04) 0%, transparent 60%),
+    linear-gradient(180deg, var(--jv-bg-1) 0%, var(--jv-bg-0) 100%);
+}
+
+/* hex-сетка убрана по просьбе пользователя */
+
+#stage {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+#wrap {
+  position: relative;
+}
+
+video,
+canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(-1);
+}
+
+video {
+  z-index: 1;
+  opacity: 1;
+  /* zatemnenie ubrano - luchshe vidno zhest i rabotaet raspoznavanie */
+}
+
+#draw {
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Сканлайны убраны: mix-blend-mode + repeating-gradient на полный viewport — дорого */
+#scanlines {
+  display: none;
+}
+
+/* бегущая горизонтальная линия-сканер удалена (нагружала GPU) */
+
+/* Угловые скобки на углах рамки */
+.corner {
+  position: absolute;
+  width: 56px;
+  height: 56px;
+  pointer-events: none;
+  z-index: 5;
+  border: 1px solid var(--jv-cyan);
+  box-shadow: 0 0 6px rgba(110, 231, 255, 0.5);
+  animation: jv-fade-in 1.2s ease-out both;
+}
+
+.corner.tl {
+  top: 14px;
+  left: 14px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.corner.tr {
+  top: 14px;
+  right: 14px;
+  border-left: none;
+  border-bottom: none;
+}
+
+.corner.bl {
+  bottom: 14px;
+  left: 14px;
+  border-right: none;
+  border-top: none;
+}
+
+.corner.br {
+  bottom: 14px;
+  right: 14px;
+  border-left: none;
+  border-top: none;
+}
+
+@keyframes jv-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Stream-mode (Cmd/Ctrl+H) — прячем весь HUD для чистого захвата в OBS. */
+body.stream-mode #ui,
+body.stream-mode .corner,
+body.stream-mode #scanlines {
+  display: none !important;
+}
+
+#ui {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 36px;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.top,
+.bottom {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.top {
+  justify-content: space-between;
+}
+
+.bottom {
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ====== Стеклянная плашка с угловыми «вырезами» ====== */
+.badge,
+.palette,
+.slider-box {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(8, 28, 48, 0.78), rgba(4, 14, 26, 0.78));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid var(--jv-line);
+  box-shadow:
+    inset 0 0 0 1px rgba(110, 231, 255, 0.06),
+    0 0 14px rgba(43, 212, 255, 0.10);
+  padding: 10px 18px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%,
+      0 100%, 0 10px);
+}
+
+/* Сканирующая полоска внутри плашек */
+.badge::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--jv-cyan), transparent);
+  opacity: 0.5;
+  animation: jv-bar 4s ease-in-out infinite;
+}
+
+@keyframes jv-bar {
+
+  0%,
+  100% {
+    transform: translateX(-30%);
+    opacity: 0.15;
+  }
+
+  50% {
+    transform: translateX(30%);
+    opacity: 0.65;
+  }
+}
+
+.badge {
+  color: rgba(207, 234, 255, 0.7);
+  font-size: 11px;
+}
+
+.badge strong {
+  color: var(--jv-cyan);
+  font-weight: 600;
+  margin-left: 6px;
+  text-shadow: 0 0 6px rgba(110, 231, 255, 0.7);
+}
+
+/* ===== Выдвижное меню выбора цвета ===== */
+.palette {
+  position: relative;
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  clip-path: none;
+  overflow: visible;
+}
+
+.palette::after {
+  display: none;
+}
+
+.palette-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 10px 16px;
+  background: linear-gradient(180deg, rgba(8, 28, 48, 0.78), rgba(4, 14, 26, 0.78));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid var(--jv-line);
+  color: var(--jv-cyan);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%,
+      0 100%, 0 10px);
+  box-shadow:
+    inset 0 0 0 1px rgba(110, 231, 255, 0.06),
+    0 0 12px rgba(43, 212, 255, 0.12);
+  transition: color .2s, box-shadow .2s;
+}
+
+.palette-trigger:hover {
+  color: #fff;
+  box-shadow:
+    inset 0 0 0 1px rgba(110, 231, 255, 0.25),
+    0 0 18px rgba(110, 231, 255, 0.45);
+}
+
+.palette-trigger .current-dot {
+  width: 14px;
+  height: 16px;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  filter: drop-shadow(0 0 6px currentColor);
+}
+
+.palette-trigger .chev {
+  font-size: 9px;
+  opacity: 0.7;
+  transition: transform .2s;
+}
+
+.palette.open .palette-trigger .chev {
+  transform: rotate(180deg);
+}
+
+.palette-list {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  background: linear-gradient(180deg, rgba(8, 28, 48, 0.92), rgba(4, 14, 26, 0.92));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid var(--jv-line);
+  box-shadow:
+    inset 0 0 0 1px rgba(110, 231, 255, 0.06),
+    0 0 14px rgba(43, 212, 255, 0.12);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%,
+      0 100%, 0 10px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.palette.open .palette-list {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Шестиугольные swatch-ячейки */
+.swatch {
+  width: 28px;
+  height: 32px;
+  cursor: pointer;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  border: none;
+  transition: transform .2s ease, filter .2s ease;
+  filter: drop-shadow(0 0 0 transparent);
+}
+
+.swatch:hover {
+  transform: scale(1.12);
+  filter: drop-shadow(0 0 6px currentColor);
+}
+
+.swatch.active {
+  transform: scale(1.18);
+  filter: drop-shadow(0 0 10px currentColor);
+  outline: 1px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 1px;
+}
+
+.btn {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(8, 28, 48, 0.78), rgba(4, 14, 26, 0.78));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid var(--jv-line);
+  color: var(--jv-cyan);
+  padding: 10px 22px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%,
+      0 100%, 0 10px);
+  transition: color .2s, background .2s, box-shadow .2s;
+  box-shadow:
+    inset 0 0 0 1px rgba(110, 231, 255, 0.06),
+    0 0 12px rgba(43, 212, 255, 0.12);
+}
+
+.btn:hover {
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgba(20, 60, 100, 0.85), rgba(8, 24, 44, 0.85));
+  box-shadow:
+    inset 0 0 0 1px rgba(110, 231, 255, 0.25),
+    0 0 18px rgba(110, 231, 255, 0.45);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.slider-box {
+  gap: 12px;
+  padding: 10px 18px;
+  pointer-events: auto;
+}
+
+.slider-icon {
+  font-size: 14px;
+  filter: drop-shadow(0 0 4px var(--jv-cyan));
+}
+
+.slider-val {
+  font-size: 12px;
+  color: var(--jv-cyan);
+  font-weight: 600;
+  min-width: 28px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 6px rgba(110, 231, 255, 0.6);
+}
+
+input[type=range]#eraserSize {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 120px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--jv-line-soft), var(--jv-cyan), var(--jv-line-soft));
+  border-radius: 0;
+  outline: none;
+  cursor: pointer;
+}
+
+input[type=range]#eraserSize::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--jv-cyan);
+  transform: rotate(45deg);
+  border: 1px solid #fff;
+  box-shadow: 0 0 12px var(--jv-cyan);
+  cursor: pointer;
+}
+
+input[type=range]#eraserSize::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--jv-cyan);
+  transform: rotate(45deg);
+  border: 1px solid #fff;
+  box-shadow: 0 0 12px var(--jv-cyan);
+  cursor: pointer;
+}
+
+/* Reticle-индикатор удержания (зеликовая рамка-таргет) */
+#holdRing {
+  position: absolute;
+  z-index: 6;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: opacity .15s;
+  filter: drop-shadow(0 0 8px var(--jv-cyan));
+}
+
+/* Hint-строка над низом */
+.gesture-hint {
+  font-size: 10px;
+  color: rgba(207, 234, 255, 0.55);
+  text-align: center;
+  margin-top: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  max-width: 880px;
+  line-height: 1.7;
+}
+
+.gesture-hint::before,
+.gesture-hint::after {
+  content: '— — —';
+  color: rgba(110, 231, 255, 0.35);
+  margin: 0 12px;
+}
+
+/* ====== Загрузочный экран в стиле JARVIS bootup ====== */
+.loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--jv-bg-0);
+  z-index: 10;
+  font-size: 12px;
+  text-align: center;
+  padding: 20px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--jv-cyan-l);
+}
+
+.loading.hidden {
+  display: none;
+}
+
+.loading .reticle {
+  width: 140px;
+  height: 140px;
+  margin: 0 auto 22px;
+  position: relative;
+}
+
+.loading .reticle::before,
+.loading .reticle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px dashed var(--jv-cyan);
+  border-radius: 50%;
+  animation: jv-spin 6s linear infinite;
+  filter: drop-shadow(0 0 6px var(--jv-cyan));
+}
+
+.loading .reticle::after {
+  inset: 18px;
+  border-style: solid;
+  border-color: transparent var(--jv-cyan) transparent var(--jv-cyan);
+  animation-duration: 2.4s;
+  animation-direction: reverse;
+}
+
+@keyframes jv-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading .boot-title {
+  color: var(--jv-cyan);
+  font-size: 14px;
+  letter-spacing: 6px;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(110, 231, 255, 0.6);
+  margin-bottom: 6px;
+}
+
+.loading .boot-sub {
+  color: rgba(207, 234, 255, 0.45);
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+
+/* Точечный bootup-курсор */
+.boot-dots::after {
+  content: '...';
+  animation: jv-dots 1.4s steps(4, end) infinite;
+}
+
+@keyframes jv-dots {
+  0% {
+    content: '';
+  }
+
+  25% {
+    content: '.';
+  }
+
+  50% {
+    content: '..';
+  }
+
+  75% {
+    content: '...';
+  }
+}
+
+
+/* ============================================================
+   Мобильная адаптация
+   Брейкпоинты:
+     ≤ 768px — телефоны и маленькие планшеты
+     ≤ 480px — узкие телефоны (iPhone SE и т.п.)
+   Принцип: убираем декор, увеличиваем touch-таргеты (≥ 44px),
+   прячем то, что не влезает.
+   ============================================================ */
+
+/* Кнопка переключения камеры — только мобильная, на десктопе скрыта */
+#camFlip {
+  display: none;
+}
+
+@media (max-width: 768px) {
+
+  /* ── Общий отступ UI ── */
+  #ui {
+    padding: 8px;
+  }
+
+  /* ── Угловые скобки: меньше, ближе к краям ── */
+  .corner {
+    width: 28px;
+    height: 28px;
+  }
+  .corner.tl { top: 6px;  left: 6px;  }
+  .corner.tr { top: 6px;  right: 6px; }
+  .corner.bl { bottom: 6px; left: 6px;  }
+  .corner.br { bottom: 6px; right: 6px; }
+
+  /* ── Верхняя строка бейджей ── */
+  .top {
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    padding: 5px 9px;
+    font-size: 9px;
+    letter-spacing: 0.5px;
+  }
+
+  /* На узких экранах RECOG не влезает — убираем */
+  .badge-recog {
+    display: none;
+  }
+
+  /* ── Нижняя панель управления ── */
+  .bottom {
+    gap: 6px;
+  }
+
+  /* Кнопки — минимальный tap-target 44px */
+  .btn {
+    padding: 11px 14px;
+    font-size: 10px;
+    min-height: 44px;
+  }
+
+  /* Тригер палитры */
+  .palette-trigger {
+    padding: 11px 13px;
+    font-size: 10px;
+    min-height: 44px;
+  }
+
+  /* Свотчи цвета: крупнее для пальца */
+  .swatch {
+    width: 36px;
+    height: 41px;
+  }
+
+  /* Слайдер ластика */
+  .slider-box {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  input[type=range]#eraserSize {
+    width: 80px;
+    height: 4px;
+  }
+
+  /* Большой ромбовидный thumb для тач */
+  input[type=range]#eraserSize::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+  }
+  input[type=range]#eraserSize::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Подсказка жестов — нет места, прячем */
+  .gesture-hint {
+    display: none;
+  }
+
+  /* ── Кнопка переключения камеры — показываем на мобильных ── */
+  #camFlip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(180deg, rgba(8,28,48,0.78), rgba(4,14,26,0.78));
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid var(--jv-line);
+    color: var(--jv-cyan);
+    font-size: 18px;
+    cursor: pointer;
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+    box-shadow: inset 0 0 0 1px rgba(110,231,255,0.06), 0 0 12px rgba(43,212,255,0.12);
+    transition: box-shadow .2s;
+    flex-shrink: 0;
+  }
+  #camFlip:active {
+    box-shadow: inset 0 0 0 1px rgba(110,231,255,0.35), 0 0 20px rgba(110,231,255,0.5);
+    transform: translateY(1px);
+  }
+
+  /* ── Загрузочный экран ── */
+  .loading .reticle {
+    width: 90px;
+    height: 90px;
+    margin-bottom: 16px;
+  }
+  .loading .boot-title {
+    font-size: 11px;
+    letter-spacing: 4px;
+  }
+  .loading .boot-sub {
+    font-size: 9px;
+  }
+}
+
+/* ── Совсем узкие телефоны (≤ 480px) ── */
+@media (max-width: 480px) {
+
+  /* FPS тоже прячем — оставляем только GESTURE */
+  .badge-fps {
+    display: none;
+  }
+
+  /* Кнопки ещё компактнее по тексту */
+  .btn {
+    padding: 11px 10px;
+    letter-spacing: 1px;
+  }
+}
+
+/* ── Горизонтальная ориентация телефона ── */
+@media (max-width: 768px) and (orientation: landscape) {
+
+  /* В горизонтальном режиме места по высоте мало —
+     верхние бейджи делаем полупрозрачными чтобы не закрывали рисунок */
+  .top {
+    opacity: 0.6;
+    transition: opacity .2s;
+  }
+  .top:hover,
+  .top:focus-within {
+    opacity: 1;
+  }
+
+  /* Нижняя панель совсем маленькая */
+  .btn {
+    padding: 8px 10px;
+    min-height: 38px;
+    font-size: 9px;
+  }
+  .palette-trigger {
+    min-height: 38px;
+    padding: 8px 10px;
+  }
+  .slider-box {
+    padding: 8px 10px;
+  }
+}
