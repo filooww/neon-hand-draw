@@ -2,7 +2,9 @@
 
 Draw in the air with your index finger in front of a webcam. Browser only, nothing to install, no special hardware.
 
-![JARVIS HUD — deep navy, plasma cyan](https://draw.42web.io)
+**[▶ Live demo → draw.42web.io](https://draw.42web.io)**
+
+![JARVIS HUD — deep navy, plasma cyan](.github/preview.png)
 
 ---
 
