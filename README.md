@@ -4,8 +4,7 @@ Draw in the air with your index finger in front of a webcam. Browser only, nothi
 
 **[▶ Live demo → draw.42web.io](https://draw.42web.io)**
 
-![JARVIS HUD — deep navy, plasma cyan](.github/preview.png)
-
+![JARVIS HUD — deep navy, plasma cyan](preview.png)
 ---
 
 ## Quick start
